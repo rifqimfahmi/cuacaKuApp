@@ -55,7 +55,6 @@ public class MainActivity extends AppCompatActivity {
     private double longitude;
     private Forecast mForecast;
     private Current mCurrent;
-    // private TextView mAdress;
     private TextView mTemperatureValue;
     private TextView mTimeValue;
     private TextView mHumidityValue;
@@ -68,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
     private Button mHourButton;
     private SharedPreferences mSharedPreferences;
     private SharedPreferences.Editor mEditor;
+    /* private TextView mAdress; */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,9 +89,10 @@ public class MainActivity extends AppCompatActivity {
         mProgressBar = (ProgressBar)findViewById(R.id.progressBar);
         mDayButton = (Button) findViewById(R.id.dayButton);
         mHourButton = (Button) findViewById(R.id.hourButton);
-        //mAdress = (TextView) findViewById(R.id.addressValue);
+        /* mAdress = (TextView) findViewById(R.id.addressValue); */
 
 
+        // LATITUDE dan LONGITUDE
         apiKey = "9189d3986a8dc736ebbc9882036d49c2";
         latitude = -6.2087634;
         longitude = 106.845599;
@@ -105,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
         mPrecipValue.setText(mSharedPreferences.getInt(SAVED_PRECIP, 0) + "%");
         mSummaryLabel.setText(mSharedPreferences.getString(SAVED_SUMMARY, "Getting weather.."));
         mIcon.setImageResource(mSharedPreferences.getInt(SAVED_IMAGE, R.drawable.clear_day));
+
         // Update display for the first time0
         mProgressBar.setVisibility(View.INVISIBLE);
         updateData();
@@ -122,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(MainActivity.this, DailyActivity.class);
                 Bundle extras = new Bundle();
                 extras.putParcelableArray(DAILY_FORECAST, mForecast.getDays());
-                // extras.putString(LOCATION_FORMAT, Forecast.getLocationFormat());
+                /* extras.putString(LOCATION_FORMAT, Forecast.getLocationFormat()); */
                 intent.putExtras(extras);
                 startActivity(intent);
             }
@@ -136,8 +138,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
-
     }
 
     @Override
@@ -152,77 +152,6 @@ public class MainActivity extends AppCompatActivity {
             mEditor.putString(SAVED_SUMMARY, mCurrent.getSummary());
             mEditor.putInt(SAVED_IMAGE, mCurrent.getIconId());
             mEditor.apply();
-        }
-    }
-
-    private void getLocationName() {
-        Geocoder geoCoder = new Geocoder(MainActivity.this, Locale.getDefault());
-        StringBuilder builder = new StringBuilder();
-        try {
-            List<Address> address = geoCoder.getFromLocation(latitude, longitude, 1);
-            mForecast.mLocality = address.get(0).getLocality();
-            mForecast.mCity = address.get(0).getSubAdminArea();
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            alertUserAboutError("Service is not availalbe. Please restart your device");
-        }
-        catch (NullPointerException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void toggleRefreshButton() {
-        if(mRefreshButton.getVisibility() == View.VISIBLE){
-            mRefreshButton.setVisibility(View.INVISIBLE);
-            mProgressBar.setVisibility(View.VISIBLE);
-        } else {
-            mRefreshButton.setVisibility(View.VISIBLE);
-            mProgressBar.setVisibility(View.INVISIBLE);
-        }
-    }
-
-    private void updateData() {
-        if(isNetworkAvailable()) {
-            toggleRefreshButton();
-            OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder().url(connection).build();
-            Call call = client.newCall(request);
-
-            call.enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    alertUserAboutError("There was something error !");
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    if (response.isSuccessful()) {
-                        try {
-                            String jsonData = response.body().string();
-                            mForecast = setJsonData(jsonData);
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    updateCurrentDisplay();
-                                    toggleRefreshButton();
-                                }
-                            });
-
-
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } catch (JSONException e){
-                            e.printStackTrace();
-                        }
-                    } else {
-                        alertUserAboutError("There was somethin error !");
-                    }
-                }
-            });
-        } else {
-            alertUserAboutError("Network Unavailable");
         }
     }
 
@@ -314,6 +243,48 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private void updateData() {
+        if(isNetworkAvailable()) {
+            toggleRefreshButton();
+            OkHttpClient client = new OkHttpClient();
+            Request request = new Request.Builder().url(connection).build();
+            Call call = client.newCall(request);
+
+            call.enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    alertUserAboutError("There was something error !");
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    if (response.isSuccessful()) {
+                        try {
+                            String jsonData = response.body().string();
+                            mForecast = setJsonData(jsonData);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    updateCurrentDisplay();
+                                    toggleRefreshButton();
+                                }
+                            });
+
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } catch (JSONException e){
+                            e.printStackTrace();
+                        }
+                    } else {
+                        alertUserAboutError("There was somethin error !");
+                    }
+                }
+            });
+        } else {
+            alertUserAboutError("Network Unavailable");
+        }
+    }
     private boolean isNetworkAvailable() {
         ConnectivityManager manager =(ConnectivityManager) getSystemService(this.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = manager.getActiveNetworkInfo();
@@ -329,7 +300,41 @@ public class MainActivity extends AppCompatActivity {
         dialog.setErrorMessage(errorMessage);
         dialog.show(getFragmentManager(), "error_tag");
     }
-}
+
+
+    private void toggleRefreshButton() {
+        if(mRefreshButton.getVisibility() == View.VISIBLE){
+            mRefreshButton.setVisibility(View.INVISIBLE);
+            mProgressBar.setVisibility(View.VISIBLE);
+        } else {
+            mRefreshButton.setVisibility(View.VISIBLE);
+            mProgressBar.setVisibility(View.INVISIBLE);
+        }
+    }
+
+
+
+
+    /*
+    private void getLocationName() {
+        Geocoder geoCoder = new Geocoder(MainActivity.this, Locale.getDefault());
+        StringBuilder builder = new StringBuilder();
+        try {
+            List<Address> address = geoCoder.getFromLocation(latitude, longitude, 1);
+            mForecast.mLocality = address.get(0).getLocality();
+            mForecast.mCity = address.get(0).getSubAdminArea();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            alertUserAboutError("Service is not availalbe. Please restart your device");
+        }
+        catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+    }
+    */
+
  /*  private void getLocationAndUpdate() {
         toggleRefreshButton();
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -374,3 +379,6 @@ public class MainActivity extends AppCompatActivity {
                     1);
         }
     } */
+}
+
+
